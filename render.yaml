@@ -1,7 +1,7 @@
 # Render Blueprint: https://render.com/docs/blueprint-spec
 services:
   - type: web
-    name: crid-url-demo
+    name: crid-session-mapping
     runtime: node
     plan: free
     buildCommand: npm install
