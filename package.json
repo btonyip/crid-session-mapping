@@ -1,0 +1,16 @@
+{
+  "name": "crid-url-demo",
+  "version": "1.0.0",
+  "description": "MOCK demo: linking a customer's CustomerReferenceID (CRID) to a Trulioo Workflow Studio session (x-hf-session). Not Trulioo.",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}

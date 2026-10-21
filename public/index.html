@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CRID ↔ x-hf-session demo (MOCK)</title>
+<style>
+:root{
+  /* Trulioo palette (see brand guidelines): Mid Green #004C45, Light Green #A7EDC0, Blue #A4E5F1,
+     Dark Green #172D2D, Grays, Oatmeal, Signal Red #CC595F, Salmon #FAAA94 */
+  --mid:#004C45; --lg:#A7EDC0; --blue:#A4E5F1; --salmon:#FAAA94; --red:#CC595F; --oat:#F9EEE0;
+  --ink:#172D2D; --mute:#4B5A58; --line:#DAE1E0; --bg:#EBF1F0; --gray3:#C8D1D0;
+  --bad:#A63E44; --bad-bg:#F8E3E4;
+  --serif:"Times New Roman",Times,serif; --sans:Arial,Helvetica,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 var(--sans);color:var(--ink);background:var(--bg)}
+.banner{position:sticky;top:0;z-index:30;background:var(--salmon);color:var(--ink);text-align:center;font-weight:700;padding:7px;letter-spacing:.03em;border-bottom:2px solid var(--ink)}
+.hero{background:var(--mid);color:#fff;margin-top:0}
+.hero header{padding-top:16px;padding-bottom:16px}
+header,main{max-width:1280px;margin:0 auto;padding:0 16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+main{padding-bottom:40px}
+h1{font:400 26px var(--serif);margin:0}
+h1 code{color:var(--lg);font-size:20px}
+h2{font:700 12px var(--sans);margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em;color:var(--mid)}
+h3{font-family:var(--serif);font-weight:400}
+.controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--lg);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:transparent;color:#fff;padding:6px 12px;cursor:pointer;font:inherit}
+.seg button.on{background:var(--lg);color:var(--ink);font-weight:700}
+button.btn{border:1px solid var(--mid);background:#fff;color:var(--mid);border-radius:6px;padding:6px 12px;font:inherit;font-weight:700;cursor:pointer}
+button.btn:hover:not(:disabled){background:var(--lg)}
+button.btn:disabled{opacity:.45;cursor:default}
+.hero button.btn{background:transparent;color:#fff;border-color:var(--lg)}
+.hero button.btn:hover{background:var(--lg);color:var(--ink)}
+button.primary{background:var(--mid);border-color:var(--mid);color:#fff}
+button.primary:hover:not(:disabled){background:#00332e}
+button.danger{background:var(--salmon);border-color:var(--ink);color:var(--ink)}
+button.danger:hover:not(:disabled){background:#f7957b}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.row{margin-top:14px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.cust{display:flex;flex-direction:column;gap:8px}
+.cust .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cust b{font:400 18px var(--serif)}
+code,.mono{font-family:var(--mono);font-size:12px}
+.chip{display:inline-block;padding:1px 8px;border-radius:99px;font:700 11px var(--mono);background:var(--bg);color:var(--mute)}
+.chip.SESSION_BOUND,.chip.CRID_SUBMITTED{background:var(--blue);color:var(--ink)}
+.chip.LINK_SENT{background:var(--oat);color:var(--ink);border:1px solid var(--gray3)}
+.chip.IN_PROGRESS{background:var(--salmon);color:var(--ink)}
+.chip.COMPLETED{background:var(--lg);color:var(--mid)}
+.chip.warn{background:var(--bad-bg);color:var(--bad)}
+.dots{display:flex;gap:3px}
+.dots i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.dots i.d{background:var(--mid)}
+/* stepper */
+.bar{display:flex;gap:4px;margin:6px 0 12px}
+.bar button{flex:1;height:28px;border:0;border-radius:4px;background:var(--bg);font:700 11px var(--mono);color:var(--mute);cursor:pointer}
+.bar button.d{background:var(--mid);color:#fff}
+.bar button.v{outline:2px solid var(--ink);outline-offset:1px}
+.stephead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.stephead h3{margin:0;font-size:22px}
+.actor{padding:2px 9px;border-radius:99px;font-weight:700;font-size:11px}
+.actor.seek{background:var(--blue);color:var(--ink)}.actor.trulioo{background:var(--mid);color:#fff}.actor.user{background:var(--salmon);color:var(--ink)}
+.stepgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px}
+@media (max-width:1000px){.stepgrid{grid-template-columns:1fr}}
+.why{margin:6px 0 10px}
+.callout{border-left:4px solid var(--mid);background:var(--oat);padding:8px 10px;border-radius:4px;margin:8px 0}
+.callout.red{border-color:var(--red);background:var(--bad-bg)}
+pre{margin:4px 0 10px;padding:10px;background:var(--ink);color:var(--bg);border-radius:6px;overflow:auto;font:12px/1.5 var(--mono);max-height:300px;white-space:pre-wrap;word-break:break-word}
+pre mark{background:var(--lg);color:var(--ink);padding:0 2px;border-radius:2px}
+pre mark.w{background:var(--salmon)}
+pre.err{border-left:4px solid var(--red)}
+.lbl{font:700 11px var(--mono);color:var(--mute);text-transform:uppercase}
+.entry{border-top:1px dashed var(--gray3);padding-top:8px;margin-top:8px}
+.entry:first-child{border:0;margin:0;padding:0}
+.entry .t{font-weight:700}
+.note{color:var(--bad);font-weight:700;margin:4px 0}
+.stepnav{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+svg text{font:700 12px var(--sans)}
+.node rect{fill:#fff;stroke:var(--gray3);stroke-width:1.5}
+.node text{fill:#899594}
+.node.on rect{stroke:var(--ink)}
+.node.on text{fill:var(--ink)}
+.node.seek.on rect{fill:var(--blue)}
+.node.trulioo.on rect{fill:var(--mid)}
+.node.trulioo.on text{fill:#fff}
+.node.user.on rect{fill:var(--salmon)}
+.arrow{stroke:var(--gray3);stroke-width:2;fill:none}
+.arrow.on{stroke:var(--mid);stroke-width:3.5}
+.alabel{fill:var(--gray3)}.alabel.on{fill:var(--mid)}
+/* tables */
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:5px 7px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:top}
+th{color:var(--mute);font-size:11px;text-transform:uppercase}
+td.m{font-family:var(--mono);word-break:break-all}
+tr.warn td{background:var(--bad-bg)}
+tr.flash td{animation:flash 1.2s}
+@keyframes flash{from{background:var(--lg)}to{background:transparent}}
+.scroll{max-height:240px;overflow:auto}
+.hint{color:var(--mute);font-size:12px;margin-top:6px}
+/* device */
+.device{border:8px solid var(--ink);border-radius:22px;height:370px;background:#fff;overflow:hidden;max-width:300px;margin:8px auto}
+.device iframe{border:0;width:100%;height:100%}
+.empty{display:flex;height:100%;align-items:center;justify-content:center;color:var(--mute);text-align:center;padding:20px}
+.big{font:700 28px var(--mono);color:var(--mid)}
+.meter{height:10px;background:var(--line);border-radius:5px;overflow:hidden;margin:6px 0}
+.meter i{display:block;height:100%;background:var(--red);transition:width .3s}
+.badge{font:700 11px var(--mono);padding:2px 9px;border-radius:99px}
+.badge.CORRECT{background:var(--lg);color:var(--mid)}.badge.BROKEN{background:var(--bad-bg);color:var(--bad)}
+a{color:var(--bad);font-weight:700}
+.urlbox{word-break:break-all;font:12px var(--mono)}
+label{cursor:pointer}
+/* fault panel */
+.faults{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.fault{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--oat)}
+.fault .e{display:block;font:12px var(--mono);color:var(--bad);margin:2px 0 0 22px}
+.fault input{margin-right:6px}
+/* modal */
+#modal{position:fixed;inset:0;background:rgba(23,45,45,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+#modal.on{display:flex}
+.dialog{background:#fff;border-radius:12px;max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:20px;border-top:6px solid var(--red)}
+.dialog h3{margin:0 0 8px;font-size:24px}
+.dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.dialog .f{margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="banner">MOCK DEMO. This is not Trulioo.</div>
+
+<div class="hero"><header>
+  <h1>Linking a CRID to an <code>x-hf-session</code></h1>
+  <div class="controls">
+    <span class="seg" id="modeSeg">
+      <button data-mode="guided" class="on">Guided</button>
+      <button data-mode="all">Run all steps</button>
+    </span>
+    <button class="btn" data-action="reset">Reset</button>
+  </div>
+</header></div>
+
+<main>
+  <div class="grid2" id="customers"></div>
+
+  <section class="card row" id="faultPanel">
+    <h2>Break it on purpose</h2>
+    <div class="hint" style="margin:0 0 8px">Tick things to omit or get wrong. Before the affected step runs you'll be told which error to expect.</div>
+    <div class="faults" id="faultList"></div>
+  </section>
+
+  <section class="card row" id="stepper">
+    <h2>Step by step</h2>
+    <div class="bar" id="bar"></div>
+    <div id="stepPanel"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>SEEK's mapping table <span class="mono" style="text-transform:none">(SEEK's database)</span></h2>
+      <table><thead><tr><th>CRID</th><th>x-hf-session</th><th>status</th></tr></thead><tbody id="mapBody"></tbody></table>
+      <div class="hint" id="mapHint">Each session belongs to exactly one CRID.</div>
+
+      <h2 style="margin-top:16px">What Trulioo knows <span class="mono" style="text-transform:none">(export query view)</span></h2>
+      <div class="scroll"><table><thead><tr><th>session</th><th>CRID stored</th><th>status</th></tr></thead><tbody id="truBody"></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <h2>End user</h2>
+      <div id="linkBox" class="hint">No signed URL yet.</div>
+      <div class="device" id="device"><div class="empty">The end user's phone.<br>Waiting for a link from SEEK.</div></div>
+      <div style="text-align:center"><button class="btn" data-action="openDevice" id="openDevBtn" disabled>Open link on device</button></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card" id="bugPanel">
+      <h2>Show me the bug</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span>Webhook mode: <span class="badge CORRECT" id="modeBadge">CORRECT</span></span>
+        <span>
+          <button class="btn danger" data-action="breakIt">Show me the bug</button>
+          <button class="btn primary" data-action="fixIt">Fix it</button>
+        </span>
+      </div>
+      <div style="margin-top:10px">Sessions created by the webhook loop</div>
+      <div class="big"><span id="loopN">0</span> / <span id="loopCap">25</span></div>
+      <div class="meter"><i id="loopBar" style="width:0"></i></div>
+      <div id="capMsg"></div>
+      <div class="callout red">
+        <b>What goes wrong:</b> in BROKEN mode SEEK's webhook handler calls <code>GET flow</code> <u>without</u> <code>x-hf-session</code>.
+        That <b>creates a new session</b>. New sessions fire <code>FLOW_START</code>. That hits the webhook again, which calls
+        <code>GET flow</code> again, and so on. The fix: the webhook only reads <code>event.userId</code>, looks up the CRID, and never calls the flow endpoints.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Webhook log at SEEK <button class="btn" style="float:right;padding:2px 8px" data-action="replay">Replay last event</button></h2>
+      <div class="scroll"><table><thead><tr><th>event</th><th>userId</th><th>result</th></tr></thead><tbody id="evBody"></tbody></table></div>
+      <div class="hint">"Replay last event" re-sends the same event id; SEEK dedupes it.</div>
+    </section>
+  </div>
+</main>
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="dialog" id="dialog"></div></div>
+
+<script>
+(function () {
+'use strict';
+const CUSTOMERS = [
+  { key: 'A', name: 'Customer A (Test Person Alpha)', crid: 'SEEK-A-001' },
+  { key: 'B', name: 'Customer B (Test Person Bravo)', crid: 'SEEK-B-002' },
+];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// ---- step content ---------------------------------------------------------
+// nodes: which components are active; arrows: calls | link | user | webhook
+const STEPS = [
+  { title: 'Get a token', actor: 'seek', nodes: ['seek', 'trulioo'], arrows: ['calls'],
+    why: 'Every Workflow Studio call needs a Bearer token. SEEK\'s backend posts its client credentials (form-encoded) to <code>/connect/token</code> and caches the token so it does not ask again for each call.' },
+  { title: 'GET flow with NO x-hf-session', actor: 'trulioo', nodes: ['seek', 'trulioo'], arrows: ['calls'],
+    why: 'SEEK asks for the flow <b>without</b> an <code>x-hf-session</code> header. Trulioo treats that as "new end client", creates a session and returns the first step (the hidden CRID form).' },
+  { title: 'Read x-hf-session from the response HEADER', actor: 'seek', nodes: ['seek'], arrows: [],
+    why: 'The session id comes back in the <code>x-hf-session</code> <b>response header</b>.',
+    callout: 'The <code>id</code> in the response <b>body</b> is the <b>step</b> id, not the session. Using it as the session is a classic mistake.' },
+  { title: 'Store CRID ↔ x-hf-session in SEEK\'s database', actor: 'seek', nodes: ['seek'], arrows: [],
+    why: 'This is the actual binding. Trulioo\'s webhooks only tell SEEK <code>userId = x-hf-session</code>. Without this row SEEK cannot know whose verification is starting or finishing.' },
+  { title: 'Submit the CRID into the hidden form field', actor: 'trulioo', nodes: ['seek', 'trulioo'], arrows: ['calls'],
+    why: 'SEEK fills the hidden <code>external_customer_id</code> element, sending <code>x-hf-session</code> in the header so Trulioo applies it to the right session. The end user never sees this step. (Simplified body in this mock.)' },
+  { title: '(Optional) Export query shows the CRID', actor: 'trulioo', nodes: ['seek', 'trulioo'], arrows: ['calls'],
+    why: 'A sanity check: the export query for the session shows the CRID stored on Trulioo\'s side, under <code>flowData…fieldData…value</code>.' },
+  { title: 'Generate the signed URL with ?endClientId=<session>', actor: 'trulioo', nodes: ['seek', 'trulioo', 'user'], arrows: ['calls', 'link'], omit: true,
+    why: 'SEEK asks Trulioo for a signed link bound to <b>its</b> session by passing <code>?endClientId=</code>, then sends the link to the end user.',
+    callout: 'If <code>endClientId</code> is omitted, a <b>NEW</b> session is created and the CRID you stored points at a session nobody uses.' },
+  { title: 'End user opens the link → FLOW_START', actor: 'user', nodes: ['user', 'trulioo', 'seek'], arrows: ['user', 'webhook'],
+    why: 'The end user opens the link; Trulioo loads the session and POSTs <code>FLOW_START</code> to SEEK\'s webhook with <code>userId = x-hf-session</code>. SEEK looks up the CRID in its table, marks the customer IN_PROGRESS and returns 200 right away. It does <b>not</b> call any flow endpoint.' },
+  { title: 'End user completes → FLOW_END, fetch results', actor: 'user', nodes: ['user', 'trulioo', 'seek'], arrows: ['user', 'webhook', 'calls'],
+    why: 'The end user finishes; Trulioo sends <code>FLOW_END</code>. SEEK looks up the CRID, updates the status, then fetches the results with the <b>export query</b> (by session id), not with the flow endpoints.' },
+];
+
+// ---- faults ---------------------------------------------------------------
+// id, step it applies to, label, expected error, why
+const FAULTS = [
+  { id: 'noAuth', step: 1, label: 'Omit the Authorization header', short: '401 Unauthorized',
+    error: 'HTTP 401\n{"code":401,"message":"Unauthorized"}',
+    why: 'Trulioo rejects any call without a valid Bearer token. No session is created, so the flow stops at step 1.' },
+  { id: 'stepIdAsSession', step: 2, label: 'Use the body "id" as the session', short: '404 code 4100 at steps 4, 5, 6',
+    error: 'HTTP 404\n{"code":4100,"message":"End client with ID \'step_…\' was not found."}',
+    why: 'The body id is a step id, not the session. Submit, export and signed-url all send it and all fail, so the CRID is never stored and no link is produced.' },
+  { id: 'skipMapping', step: 3, label: 'Skip storing CRID ↔ x-hf-session', short: 'webhook lookup fails later',
+    error: 'No HTTP error at this step.\nLater: FLOW_START arrives with userId = <session>\nSELECT crid … WHERE hf_session = <session>  ->  (no row)',
+    why: 'SEEK has nothing to look up, so it cannot tell which customer the event belongs to. It shows up as an unknown session.' },
+  { id: 'noSessionHeader', step: 4, label: 'Omit x-hf-session on submit', short: '400 header required',
+    error: 'HTTP 400\n{"code":4000,"message":"x-hf-session header is required."}',
+    why: 'Without the header Trulioo cannot tell which session the CRID belongs to, so it is not stored.' },
+  { id: 'noCrid', step: 4, label: 'Submit an empty CRID', short: '400 field required',
+    error: 'HTTP 400\n{"code":4000,"message":"fieldData[\'<elementId>\'] is required."}',
+    why: 'The hidden field stays empty, so the export query later shows no CRID on Trulioo\'s side.' },
+  { id: 'noEndClientId', step: 6, label: 'Omit endClientId on signed-url', short: '200, but a NEW session',
+    error: 'HTTP 200 (no error!)\n{"endClientId":"<a NEW session id>","signedUrl":"…"}',
+    why: 'Trulioo quietly creates a new session for the link. SEEK\'s stored CRID points at a session nobody opens, and the end user\'s webhooks arrive for an unknown session.' },
+];
+$('#faultList').innerHTML = FAULTS.map((f) => `<div class="fault"><label><input type="checkbox" data-fault="${f.id}"> <b>${esc(f.label)}</b> <span class="mono">(step ${f.step})</span></label><span class="e">→ ${esc(f.short)}</span></div>`).join('');
+function syncFaults() {
+  document.querySelectorAll('input[data-fault]').forEach((x) => { x.checked = faults.has(x.dataset.fault); });
+}
+// Shows what will go wrong BEFORE the step runs. Resolves true to continue.
+function confirmFaults(list) {
+  if (!list.length) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    $('#dialog').innerHTML = `<h3 id="mTitle">Heads up: this will produce an error</h3>` + list.map((f) =>
+      `<div class="f"><b>${esc(f.label)}</b> <span class="mono">(step ${f.step})</span>
+       <div class="lbl">Expected</div><pre class="err">${esc(f.error)}</pre><div>${esc(f.why)}</div></div>`).join('') +
+      `<div class="btns"><button class="btn" id="mCancel">Cancel</button><button class="btn primary" id="mGo">Run it anyway</button></div>`;
+    const m = $('#modal'); m.classList.add('on');
+    const done = (v) => { m.classList.remove('on'); resolve(v); };
+    $('#mGo').onclick = () => done(true); $('#mCancel').onclick = () => done(false);
+    $('#mGo').focus();
+  });
+}
+const faultsFor = (n) => FAULTS.filter((f) => faults.has(f.id) && f.step === n);
+
+// ---- state ----------------------------------------------------------------
+const faults = new Set();
+let mode = 'guided', active = null, view = -1, st = null, busy = false, lastMax = -1;
+let deviceUrl = null;
+const cache = {};
+function setHTML(el, html) { if (cache[el.id] !== html) { cache[el.id] = html; el.innerHTML = html; } }
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  return r.json();
+}
+const custState = (crid) => st && st.customers.find((c) => c.crid === crid);
+const maxDone = (c) => (c && c.stepsDone.length ? Math.max(...c.stepsDone) : -1);
+
+// ---- actions --------------------------------------------------------------
+async function start(crid) {
+  const meta = CUSTOMERS.find((c) => c.crid === crid);
+  if (!(await confirmFaults(mode === 'all' ? FAULTS.filter((f) => faults.has(f.id)) : faultsFor(0)))) return;
+  active = crid; view = -1; lastMax = -1; busy = true; setDevice(null);
+  if (mode === 'all') {
+    await api('/seek/api/start-verification', { crid, customerName: meta.name, faults: [...faults] });
+  } else {
+    await api('/seek/api/step', { crid, customerName: meta.name, n: 0, faults: [...faults] });
+  }
+  busy = false; await refresh();
+}
+function setDevice(url) {
+  deviceUrl = url; cache.device = null;
+  $('#device').innerHTML = '<div class="empty">The end user\'s phone.<br>Waiting for a link from SEEK.</div>';
+  $('#openDevBtn').disabled = !url;
+}
+function loadDevice() {
+  if (!deviceUrl) return;
+  $('#device').innerHTML = '<iframe title="End user device" id="devFrame"></iframe>';
+  $('#devFrame').src = deviceUrl; // loading the link = FLOW_START
+}
+function completeOnDevice() {
+  const f = $('#devFrame');
+  try { f.contentWindow.document.getElementById('complete').click(); }
+  catch (e) { const u = new URL(deviceUrl); fetch(u.pathname + '/complete' + u.search, { method: 'POST' }); }
+}
+async function next() {
+  const c = custState(active); if (!c || busy) return;
+  const n = nextStep(c);
+  if (n <= 6 && !(await confirmFaults(faultsFor(n)))) return;
+  if (n <= 6) { busy = true; await api('/seek/api/step', { crid: active, n, faults: [...faults] }); busy = false; }
+  else if (n === 7) { busy = true; deviceUrl = c.signedUrl; loadDevice(); }
+  else if (n === 8) { busy = true; if (!$('#devFrame')) { deviceUrl = c.signedUrl; loadDevice(); setTimeout(completeOnDevice, 600); } else completeOnDevice(); }
+  await refresh();
+}
+const nextStep = (c) => { for (let n = 0; n <= 8; n++) if (!c.stepsDone.includes(n)) return n; return 9; };
+
+async function breakIt() {
+  await api('/seek/api/mode', { broken: true });
+  let c = custState('SEEK-A-001');
+  active = 'SEEK-A-001';
+  if (!c || !c.stepsDone.includes(6)) {
+    await api('/seek/api/start-verification', { crid: 'SEEK-A-001', customerName: CUSTOMERS[0].name, faults: [] });
+    await refresh(); c = custState('SEEK-A-001');
+  }
+  deviceUrl = c.signedUrl; loadDevice();
+}
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-action],[data-mode],[data-view]');
+  if (!b) return;
+  if (b.dataset.mode) { mode = b.dataset.mode; document.querySelectorAll('#modeSeg button').forEach((x) => x.classList.toggle('on', x === b)); render(); return; }
+  if (b.dataset.view) { view = +b.dataset.view; render(); return; }
+  const a = b.dataset.action;
+  if (a === 'start') await start(b.dataset.crid);
+  else if (a === 'next') await next();
+  else if (a === 'openDevice') { loadDevice(); }
+  else if (a === 'breakIt') await breakIt();
+  else if (a === 'fixIt') await api('/seek/api/mode', { broken: false });
+  else if (a === 'replay') await fetch('/trulioo/_demo/replay-last', { method: 'POST' });
+  else if (a === 'reset') { await api('/seek/api/reset', {}); active = null; view = -1; lastMax = -1; busy = false; setDevice(null); }
+  refresh();
+});
+document.addEventListener('change', (e) => {
+  const f = e.target.dataset && e.target.dataset.fault;
+  if (f) { e.target.checked ? faults.add(f) : faults.delete(f); syncFaults(); }
+});
+
+// ---- rendering ------------------------------------------------------------
+function fmtReq(r) {
+  let s = `${r.method} ${r.url}\n`;
+  for (const k in r.headers) s += `${k}: ${r.headers[k]}\n`;
+  if (r.body !== undefined) s += '\n' + (typeof r.body === 'string' ? r.body : JSON.stringify(r.body, null, 2));
+  return s;
+}
+function fmtRes(r) {
+  let s = `HTTP ${r.status}\n`;
+  for (const k in r.headers) s += `${k}: ${r.headers[k]}\n`;
+  if (r.body !== undefined) s += '\n' + (typeof r.body === 'string' ? r.body : JSON.stringify(r.body, null, 2));
+  return s;
+}
+function block(text, step, isRes) {
+  let seenId = false;
+  return '<pre>' + text.split('\n').map((l) => {
+    let h = esc(l);
+    if (/^x-hf-session:/i.test(l)) return `<mark>${h}</mark>`;
+    if (/endClientId=/.test(l)) return h.replace(/(endClientId=[^\s]*)/, '<mark>$1</mark>');
+    if (step === 2 && isRes && !seenId && /^  "id":/.test(l)) { seenId = true; return `<mark class="w">${h}</mark>   ← step id, NOT the session`; }
+    return h;
+  }).join('\n') + '</pre>';
+}
+
+function diagram(step) {
+  const s = STEPS[step] || { nodes: [], arrows: [] };
+  const n = (id, x, label) => `<g class="node ${id} ${s.nodes.includes(id) ? 'on' : ''}"><rect x="${x}" y="48" width="150" height="54" rx="10"/><text x="${x + 75}" y="80" text-anchor="middle">${label}</text></g>`;
+  const a = (id, d, lx, ly, label) => `<path class="arrow ${s.arrows.includes(id) ? 'on' : ''}" d="${d}"/><text class="alabel ${s.arrows.includes(id) ? 'on' : ''}" x="${lx}" y="${ly}" text-anchor="middle">${label}</text>`;
+  return `<svg viewBox="0 0 560 150" width="100%" role="img" aria-label="Active components">
+  <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="#6b7280"/></marker></defs>
+  ${n('seek', 8, 'SEEK backend')}${n('trulioo', 205, 'Trulioo (mock)')}${n('user', 402, 'End user')}
+  ${a('calls', 'M160 75H203', 182, 66, 'API')}
+  ${a('user', 'M357 75H400', 379, 66, 'opens')}
+  ${a('webhook', 'M280 104V128H83V104', 180, 142, 'webhook')}
+  ${a('link', 'M83 46V18H477V46', 280, 13, 'signed URL')}
+</svg>`;
+}
+
+function renderCustomers() {
+  setHTML($('#customers'), CUSTOMERS.map((m) => {
+    const c = custState(m.crid);
+    const done = c ? c.stepsDone : [];
+    const dots = Array.from({ length: 9 }, (_, i) => `<i class="${done.includes(i) ? 'd' : ''}"></i>`).join('');
+    return `<div class="card cust"><div class="top"><b>${esc(m.name)}</b><span class="chip ${c ? c.status : ''}">${c ? c.status : 'NOT_STARTED'}</span></div>
+      <div>CRID <code>${m.crid}</code></div><div class="dots" title="steps 0-8">${dots}</div>
+      <div><button class="btn primary" data-action="start" data-crid="${m.crid}">${c ? 'Restart verification' : 'Start verification'}</button></div></div>`;
+  }).join(''));
+}
+
+function renderStepper() {
+  const c = active && custState(active);
+  const done = c ? c.stepsDone : [];
+  setHTML($('#bar'), STEPS.map((s, i) => `<button class="${done.includes(i) ? 'd' : ''} ${view === i ? 'v' : ''}" data-view="${i}" title="${esc(s.title)}">${i}</button>`).join(''));
+  const omitCb = `<label><input type="checkbox" data-fault="noEndClientId" ${faults.has('noEndClientId') ? 'checked' : ''}> Omit endClientId</label>`;
+  let html = '';
+  if (!c) {
+    const s = STEPS[Math.max(view, 0)];
+    html = `<div class="why">Pick a customer and press <b>Start verification</b>. In <b>Guided</b> mode each press of <b>Next</b> runs one step of the flow and shows the exact request and response. In <b>Run all steps</b> mode steps 0-6 run at once and you can click any step number to inspect it.</div>`;
+    if (view >= 0) html += '<div class="hint">Nothing has run yet for this step.</div>';
+    void s;
+  } else {
+    const v = view >= 0 ? view : Math.max(maxDone(c), 0);
+    const s = STEPS[v];
+    const entries = st.trace.filter((e) => e.crid === active && e.step === v);
+    const entryHTML = entries.length ? entries.map((e) => `<div class="entry">
+      <div class="t"><span class="actor ${e.actor}">${e.actor === 'seek' ? 'SEEK backend' : 'Trulioo'}</span> ${esc(e.title)} ${e.response && e.response.status >= 400 ? `<span class="chip warn">HTTP ${e.response.status}</span>` : ''}</div>
+      ${e.request ? `<div class="lbl">Request</div>${block(fmtReq(e.request), v, false)}` : ''}
+      ${e.response ? `<div class="lbl">Response</div>${block(fmtRes(e.response), v, true).replace('<pre>', e.response.status >= 400 ? '<pre class="err">' : '<pre>')}` : ''}
+      ${e.local ? `<div class="lbl">Inside SEEK</div>${block(e.local, v, false)}` : ''}
+      ${e.note ? `<div class="note">${esc(e.note)}</div>` : ''}</div>`).join('')
+      : '<div class="hint">Waiting for this step…</div>';
+    const callout = s.callout ? `<div class="callout">${s.callout}${s.omit ? `<br>${omitCb}` : ''}</div>` : '';
+    const n = nextStep(c);
+    const nextLabel = n === 7 ? 'Next: end user opens link' : n === 8 ? 'Next: end user completes' : n > 8 ? 'All done' : `Next: step ${n}`;
+    const nav = mode === 'guided'
+      ? `<div class="stepnav"><button class="btn primary" data-action="next" ${busy || n > 8 || c.blocked ? 'disabled' : ''}>${nextLabel} ▸</button>
+         <span class="hint">${n <= 8 ? `step ${Math.max(maxDone(c) + 1, 0)} of 9 done: ${done.length}/9` : 'The flow is complete.'}</span>${n === 6 ? omitCb : ''}</div>`
+      : '';
+    html = `<div class="stepgrid"><div>
+      <div class="stephead"><h3>Step ${v}. ${esc(s.title)}</h3><span class="actor ${s.actor}">${s.actor === 'seek' ? 'SEEK backend' : s.actor === 'user' ? 'End user' : 'Trulioo'}</span></div>
+      <div class="why">${s.why}</div>${callout}${entryHTML}${nav}</div>
+      <div>${diagram(v)}${c.blocked ? `<div class="callout red"><b>Flow stopped.</b> ${esc(c.blocked)} Press Reset or Restart to try again.</div>` : ''}${c.lookupFailed ? '<div class="callout red">Webhook arrived for a session SEEK never stored: the lookup failed.</div>' : ''}</div></div>`;
+  }
+  setHTML($('#stepPanel'), html);
+}
+
+function renderTables() {
+  const lastStatus = renderTables.last || (renderTables.last = {});
+  setHTML($('#mapBody'), st.mapping.map((m) => {
+    const key = m.session + m.status, flash = lastStatus[m.session] !== key && lastStatus.init;
+    return `<tr class="${flash ? 'flash' : ''}"><td class="m">${esc(m.crid)}</td><td class="m">${esc(m.session)}</td><td><span class="chip ${m.status}">${m.status}</span></td></tr>`;
+  }).concat(st.orphans.map((o) => `<tr class="warn"><td class="m">? not found</td><td class="m">${esc(o.session)}</td><td><span class="chip warn">EVENT FOR UNKNOWN SESSION</span></td></tr>`)).join('') ||
+    '<tr><td colspan="3" class="hint">No sessions yet.</td></tr>');
+  st.mapping.forEach((m) => (lastStatus[m.session] = m.session + m.status)); lastStatus.init = true;
+  const mismatch = st.customers.some((c) => c.signedSession && c.signedSession !== c.session);
+  $('#mapHint').innerHTML = mismatch
+    ? '<b style="color:var(--bad)">Mismatch:</b> SEEK stored the CRID against one session, but the signed URL points at another. The row above will never move; the orphan row is the session the end user actually got.'
+    : 'Each session belongs to exactly one CRID.';
+  setHTML($('#truBody'), st.trulioo.sessions.map((s) => `<tr><td class="m">${esc(s.id)}</td><td class="m">${s.crid ? esc(s.crid) : '<span style="color:var(--mute)">(none)</span>'}</td><td>${s.status}</td></tr>`).join('') || '<tr><td colspan="3" class="hint">No sessions yet.</td></tr>');
+  setHTML($('#evBody'), st.events.map((e) => `<tr><td class="m">${esc(e.type || '?')}</td><td class="m">${esc(e.userId || '')}</td><td>${esc(e.result)}</td></tr>`).join('') || '<tr><td colspan="3" class="hint">No events yet.</td></tr>');
+}
+
+function renderBug() {
+  const b = $('#modeBadge'); b.textContent = st.mode; b.className = 'badge ' + st.mode;
+  $('#loopN').textContent = st.loop.created; $('#loopCap').textContent = st.loop.cap;
+  $('#loopBar').style.width = (100 * st.loop.created / st.loop.cap) + '%';
+  setHTML($('#capMsg'), st.loop.tripped
+    ? `<div class="callout red"><b>Safety cap reached (${st.loop.cap} sessions).</b> The loop was still going: every webhook created a session, and every new session sent another webhook. The demo stops the handler here. In production nothing would stop it. Click <b>Fix it</b> or <b>Reset</b>.</div>`
+    : (st.mode === 'BROKEN' && st.loop.created ? '<div class="hint">Loop running…</div>' : ''));
+}
+
+function renderLink() {
+  const c = active && custState(active);
+  setHTML($('#linkBox'), c && c.signedUrl
+    ? `<div class="lbl">Signed URL sent to the end user</div><div class="urlbox"><a href="${esc(c.signedUrl)}" target="_blank" rel="noopener">${esc(c.signedUrl)}</a></div>
+       <div class="hint">Opens a mock page. Loading it triggers FLOW_START; its button triggers FLOW_END.</div>`
+    : '<div class="hint">No signed URL yet.</div>');
+  if (c && c.signedUrl && deviceUrl !== c.signedUrl && !$('#devFrame')) { deviceUrl = c.signedUrl; $('#openDevBtn').disabled = false; }
+}
+
+function render() {
+  if (!st) return;
+  const c = active && custState(active);
+  if (c) {
+    const m = maxDone(c);
+    if (m !== lastMax) { lastMax = m; view = m; busy = false; }
+  }
+  renderCustomers(); renderStepper(); renderTables(); renderBug(); renderLink();
+  syncFaults();
+}
+
+async function refresh() { try { st = await api('/seek/api/state'); render(); } catch (e) { /* server restarting */ } }
+refresh(); setInterval(refresh, 700);
+})();
+</script>
+</body>
+</html>
